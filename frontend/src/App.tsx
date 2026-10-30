@@ -1,23 +1,17 @@
-import { useEffect, useState } from 'react'
+import { AuthProvider } from './features/auth/AuthContext'
+import { useAuth } from './features/auth/useAuth'
+import { BalancePage } from './features/balance/BalancePage'
+import { LoginPage } from './features/auth/LoginPage'
 
-type ApiStatus = 'loading' | 'ok' | 'error'
-
-// Placeholder del paso 1: verifica la integración front → API.
-function App() {
-  const [status, setStatus] = useState<ApiStatus>('loading')
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((res) => setStatus(res.ok ? 'ok' : 'error'))
-      .catch(() => setStatus('error'))
-  }, [])
-
-  return (
-    <main style={{ padding: 16 }}>
-      <h1>Orbita</h1>
-      <p>API: {status}</p>
-    </main>
-  )
+function Screen() {
+  const { session } = useAuth()
+  return session ? <BalancePage /> : <LoginPage />
 }
 
-export default App
+export default function App() {
+  return (
+    <AuthProvider>
+      <Screen />
+    </AuthProvider>
+  )
+}
