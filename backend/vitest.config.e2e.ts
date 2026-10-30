@@ -12,6 +12,7 @@ export default defineConfig({
       JWT_SECRET: 'test-jwt-secret',
       JWT_TTL_SECONDS: '900',
       WEBHOOK_SECRET: 'test-webhook-secret',
+      LOG_LEVEL: 'silent',
     },
   },
 });

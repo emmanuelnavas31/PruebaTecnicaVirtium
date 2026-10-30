@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module.js';
 import { BalancesModule } from './balances/balances.module.js';
 import { validateEnv } from './config/env.js';
+import { loggerConfig } from './config/logger.config.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
 import { WebhooksModule } from './webhooks/webhooks.module.js';
@@ -14,6 +16,7 @@ import { WebhooksModule } from './webhooks/webhooks.module.js';
       envFilePath: ['.env', '../.env'],
       validate: validateEnv,
     }),
+    LoggerModule.forRootAsync({ inject: [ConfigService], useFactory: loggerConfig }),
     DatabaseModule,
     AuthModule,
     BalancesModule,

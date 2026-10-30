@@ -1,4 +1,4 @@
-import {Injectable} from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import {and, count, desc, eq} from 'drizzle-orm';
 import {createHash} from 'node:crypto';
 import {AppException, ErrorBody} from '../common/errors/app.exception.js';
@@ -25,6 +25,8 @@ const MAX_KEY_LENGTH = 255;
 
 @Injectable()
 export class BalancesService {
+  private readonly logger = new Logger(BalancesService.name);
+
   constructor(
     private readonly database: DatabaseService,
     private readonly ledger: LedgerService,
@@ -104,7 +106,15 @@ export class BalancesService {
       return {status, body, replayed: false};
     });
 
-    if (result.status >= 400) throw AppException.fromBody(result.body as ErrorBody);
+    const logContext = {userId, operation, amount: dto.amount, idempotencyKey, replayed: result.replayed};
+    if (result.status >= 400) {
+      this.logger.warn({...logContext, code: (result.body as ErrorBody).code}, 'Operación rechazada');
+      throw AppException.fromBody(result.body as ErrorBody);
+    }
+    this.logger.log(
+      {...logContext, transactionId: (result.body as OperationResultDto).transaction.id},
+      result.replayed ? 'Operación repetida con la misma Idempotency-Key' : 'Operación aplicada',
+    );
     return {body: result.body as OperationResultDto, replayed: result.replayed};
   }
 

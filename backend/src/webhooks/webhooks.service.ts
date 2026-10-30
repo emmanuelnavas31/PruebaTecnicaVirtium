@@ -4,7 +4,10 @@ import { toCents } from '../common/money/money.js';
 import { LedgerService } from '../balances/ledger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { users, webhookEvents, WebhookOutcome } from '../database/schema.js';
-import type { PaymentGatewayEventDto, WebhookAckDto } from './dto/payment-gateway-event.dto.js';
+import type {
+  PaymentGatewayEventDto,
+  WebhookAckDto,
+} from './dto/payment-gateway-event.dto.js';
 
 @Injectable()
 export class WebhooksService {
@@ -29,14 +32,26 @@ export class WebhooksService {
         .get();
       if (existing) {
         tx.update(webhookEvents)
-          .set({ deliveries: sql`${webhookEvents.deliveries} + 1`, lastReceivedAt: now })
+          .set({
+            deliveries: sql`${webhookEvents.deliveries} + 1`,
+            lastReceivedAt: now,
+          })
           .where(eq(webhookEvents.eventId, event.event_id))
           .run();
-        return { received: true, eventId: event.event_id, outcome: existing.outcome, duplicate: true };
+        return {
+          received: true,
+          eventId: event.event_id,
+          outcome: existing.outcome,
+          duplicate: true,
+        };
       }
 
       const amountCents = toCents(event.amount);
-      const user = tx.select().from(users).where(eq(users.id, event.user_id)).get();
+      const user = tx
+        .select()
+        .from(users)
+        .where(eq(users.id, event.user_id))
+        .get();
       let outcome: WebhookOutcome;
       let transactionId: number | null = null;
       if (event.status === 'rejected') {
@@ -44,9 +59,15 @@ export class WebhooksService {
       } else if (!user) {
         outcome = 'USER_NOT_FOUND';
       } else {
-        const applied = this.ledger.applyMovement(tx, user.id, 'GATEWAY_CREDIT', amountCents, {
-          webhookEventId: event.event_id,
-        });
+        const applied = this.ledger.applyMovement(
+          tx,
+          user.id,
+          'GATEWAY_CREDIT',
+          amountCents,
+          {
+            webhookEventId: event.event_id,
+          },
+        );
         transactionId = applied.transaction.id;
         outcome = 'CREDITED';
       }
@@ -65,11 +86,26 @@ export class WebhooksService {
           lastReceivedAt: now,
         })
         .run();
-      return { received: true, eventId: event.event_id, outcome, duplicate: false };
+      return {
+        received: true,
+        eventId: event.event_id,
+        outcome,
+        duplicate: false,
+      };
     });
 
     this.logger.log(
-      `Evento ${ack.eventId}: ${ack.outcome}${ack.duplicate ? ' (reentrega ignorada)' : ''}`,
+      {
+        eventId: ack.eventId,
+        userId: event.user_id,
+        amount: event.amount,
+        status: event.status,
+        outcome: ack.outcome,
+        duplicate: ack.duplicate,
+      },
+      ack.duplicate
+        ? 'Evento de pasarela repetido (ignorado)'
+        : 'Evento de pasarela procesado',
     );
     return ack;
   }

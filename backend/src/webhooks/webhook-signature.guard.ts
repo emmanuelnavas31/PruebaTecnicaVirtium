@@ -23,7 +23,7 @@ export class WebhookSignatureGuard implements CanActivate {
       /^[0-9a-f]{64}$/.test(signature) &&
       timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'));
     if (!valid) {
-      this.logger.warn(`Firma inválida desde ${req.ip}`);
+      this.logger.warn({ ip: req.ip }, 'Webhook con firma inválida');
       throw new AppException(401, 'INVALID_SIGNATURE', 'La firma X-Signature no es válida');
     }
     return true;
