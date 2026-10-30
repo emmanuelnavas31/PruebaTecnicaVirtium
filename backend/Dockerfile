@@ -19,6 +19,7 @@ WORKDIR /app
 COPY --from=build /app/node_modules node_modules
 COPY --from=build /app/backend/package.json backend/
 COPY --from=build /app/backend/dist backend/dist
+COPY --from=build /app/backend/drizzle backend/drizzle
 RUN mkdir -p backend/data && chown -R node:node backend/data
 USER node
 WORKDIR /app/backend
