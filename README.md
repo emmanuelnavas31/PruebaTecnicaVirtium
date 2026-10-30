@@ -94,7 +94,7 @@ npm run lint
 - **Login:** mensaje entendible si las credenciales son inválidas (con los intentos restantes y el aviso de bloqueo), y validación del email antes de enviar.
 - **Sesión:** se guarda en cookie y el header `Authorization` se envía; la sesión se conserva al recargar y se puede cerrar.
 - **401:** si la API responde 401 se vuelve al login con el motivo; también si el token guardado ya venció.
-- **Formulario:** el monto se valida antes de enviarlo, el botón se deshabilita mientras se envía y se envía la `Idempotency-Key`; además muestra el error de saldo insuficiente.
+- **Formulario:** el monto se valida antes de enviarlo; un popup pide confirmar el monto (cancelar con el botón o con Escape no envía nada); el botón se deshabilita mientras se envía y se envía la `Idempotency-Key`; además muestra el error de saldo insuficiente.
 
 ## API
 

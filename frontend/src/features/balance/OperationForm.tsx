@@ -1,15 +1,16 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ApiError } from '../../api/client'
 import { createOperation } from '../../api/orbita'
 import type { OperationKind } from '../../api/orbita'
 import { Alert } from '../../components/Alert'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { newIdempotencyKey } from '../../lib/id'
 import { formatUsd, normalizeAmount, validateAmount } from '../../lib/money'
 
-const LABELS: Record<OperationKind, { action: string; done: string }> = {
-  deposits: { action: 'Depositar', done: 'Depósito realizado' },
-  withdrawals: { action: 'Retirar', done: 'Retiro realizado' },
+const LABELS: Record<OperationKind, { action: string; noun: string; done: string }> = {
+  deposits: { action: 'Depositar', noun: 'depósito', done: 'Depósito realizado' },
+  withdrawals: { action: 'Retirar', noun: 'retiro', done: 'Retiro realizado' },
 }
 
 export function OperationForm({ onCompleted }: { onCompleted: () => void }) {
@@ -18,6 +19,8 @@ export function OperationForm({ onCompleted }: { onCompleted: () => void }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  // Monto ya validado que espera la confirmación del usuario.
+  const [toConfirm, setToConfirm] = useState<string | null>(null)
   // Se conserva si falla la red: reintentar la misma operación no la duplica.
   const pendingKey = useRef<string | null>(null)
 
@@ -27,15 +30,19 @@ export function OperationForm({ onCompleted }: { onCompleted: () => void }) {
     setSuccess(null)
   }
 
-  async function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const validation = validateAmount(amount)
-    if (validation) {
-      setSuccess(null)
-      return setError(validation)
-    }
+    setSuccess(null)
+    if (validation) return setError(validation)
+    setError(null)
+    setToConfirm(normalizeAmount(amount))
+  }
 
-    const value = normalizeAmount(amount)
+  const cancelConfirmation = useCallback(() => setToConfirm(null), [])
+
+  async function send(value: string) {
+    setToConfirm(null)
     pendingKey.current ??= newIdempotencyKey()
     setSubmitting(true)
     setError(null)
@@ -101,6 +108,20 @@ export function OperationForm({ onCompleted }: { onCompleted: () => void }) {
           {submitting ? 'Procesando…' : LABELS[kind].action}
         </button>
       </form>
+
+      {toConfirm && (
+        <ConfirmDialog
+          title={`Confirmar ${LABELS[kind].noun}`}
+          confirmLabel={`Sí, ${LABELS[kind].action.toLowerCase()}`}
+          onConfirm={() => send(toConfirm)}
+          onCancel={cancelConfirmation}
+        >
+          <p className="dialog__text">¿Confirmas que deseas {LABELS[kind].action.toLowerCase()}?</p>
+          <p className="dialog__amount">
+            {formatUsd(toConfirm)} <span className="muted">USD</span>
+          </p>
+        </ConfirmDialog>
+      )}
     </section>
   )
 }

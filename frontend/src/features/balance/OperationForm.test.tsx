@@ -19,6 +19,36 @@ describe('OperationForm', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
+  it('pide confirmación con el monto antes de enviar', async () => {
+    const fetchSpy = mockApi({})
+    render(<OperationForm onCompleted={vi.fn()} />)
+    await userEvent.click(screen.getByText('Retirar'))
+    await userEvent.type(screen.getByLabelText(/Monto/), '1500.5')
+    await userEvent.click(screen.getByRole('button', { name: 'Retirar' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar retiro' })
+    expect(dialog).toHaveTextContent('$1,500.50')
+    expect(screen.getByRole('button', { name: 'Sí, retirar' })).toHaveFocus()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('cancelar (botón o Escape) cierra el popup sin enviar', async () => {
+    const fetchSpy = mockApi({})
+    render(<OperationForm onCompleted={vi.fn()} />)
+    await userEvent.type(screen.getByLabelText(/Monto/), '10')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Depositar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Depositar' }))
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    expect(screen.getByLabelText(/Monto/)).toHaveValue('10')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
   it('deshabilita el botón mientras envía y usa Idempotency-Key', async () => {
     let release!: () => void
     const pending = new Promise<void>((resolve) => (release = resolve))
@@ -31,6 +61,7 @@ describe('OperationForm', () => {
 
     await userEvent.type(screen.getByLabelText(/Monto/), '25,50')
     await userEvent.click(screen.getByRole('button', { name: 'Depositar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sí, depositar' }))
 
     expect(screen.getByRole('button', { name: 'Procesando…' })).toBeDisabled()
     const [url, init] = fetchSpy.mock.calls[0]
@@ -55,6 +86,7 @@ describe('OperationForm', () => {
     await userEvent.click(screen.getByText('Retirar'))
     await userEvent.type(screen.getByLabelText(/Monto/), '500')
     await userEvent.click(screen.getByRole('button', { name: 'Retirar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sí, retirar' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No tienes saldo suficiente')
   })
