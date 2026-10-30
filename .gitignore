@@ -156,4 +156,4 @@ vite.config.ts.timestamp-*
 *.sqlite-wal
 *.sqlite-shm
 backend/data/
-docs
+docs/PLAN.md

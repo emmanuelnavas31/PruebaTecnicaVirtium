@@ -249,20 +249,29 @@ flowchart LR
   - límite de intentos persistente y compartido entre instancias (Redis), combinado con un límite por IP. Hoy vive en memoria: se reinicia con la API y solo sirve con una instancia;
   - refresh tokens y revocación;
   - mover el token a una cookie `HttpOnly` emitida por la API, con protección CSRF.
-- **Observabilidad:** métricas (Prometheus) y envío de los logs a un agregador.
 - **CI/CD:** CI con GitHub Actions (lint + pruebas) y deploy continuo.
+- **Sistema de colas (BullMQ + Redis):**
+  - procesar el webhook en segundo plano (responder 200 al instante, reintentos con backoff y dead-letter queue);
+  - emitir eventos `balance.updated` con un outbox transaccional.
+  - La propuesta completa, con diagramas y contrapartidas, está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#8-evolución-propuesta-sistema-de-colas).
 - **Datos:**
   - expirar las `idempotency_keys` antiguas (p. ej. a las 24 h);
-  - reprocesar los eventos `USER_NOT_FOUND`;
+  - reprocesar los eventos `USER_NOT_FOUND` (resuelto con la DLQ de la propuesta de colas);
   - PostgreSQL si hubiera varias instancias.
 - **Pruebas de la pantalla:** end-to-end con Playwright en un navegador real, incluyendo el viewport de 390px.
 
 ## Tiempo dedicado
 
-<!-- TODO: completar -->
-_Pendiente de completar._
+Aproximadamente **4 horas**.
 
 ## Uso de IA
 
-<!-- TODO: completar con tu propia descripción -->
-_Pendiente de completar._
+El proyecto se hizo con **desarrollo asistido por IA**, usando Claude Code como asistente.
+
+- **Qué hizo la IA:** generó la mayor parte del código del backend, el frontend, las pruebas, la configuración de Docker y la documentación (este README y los diagramas).
+- **Qué hice yo:**
+  - Definí el enfoque: el stack, la base de datos y la estructura en dos carpetas.
+  - Guié el trabajo paso a paso, pidiendo cada parte por separado (estructura, Swagger, base de datos, auth, saldos, webhook, front, límite de intentos, logs, popup de confirmación).
+  - Revisé lo generado en cada paso: los archivos creados, la lógica de negocio (idempotencia, saldo no negativo, firma del webhook, manejo de la sesión) y las pruebas.
+  - Verifiqué el funcionamiento en Swagger, en el navegador y con Docker.
+  - Hice los commits por etapas después de cada revisión.
