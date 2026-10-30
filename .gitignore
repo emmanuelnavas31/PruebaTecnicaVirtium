@@ -149,3 +149,11 @@ vite.config.ts.timestamp-*
 .turbo
 .idea
 .junie
+
+# Orbita
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+backend/data/
+docs
