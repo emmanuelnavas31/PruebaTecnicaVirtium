@@ -5,6 +5,7 @@ import type {Env} from '../config/env.js';
 import {AuthController} from './auth.controller.js';
 import {AuthService} from './auth.service.js';
 import {JwtAuthGuard} from './jwt-auth.guard.js';
+import {LoginAttemptsService} from './login-attempts.service.js';
 
 @Global()
 @Module({
@@ -18,7 +19,7 @@ import {JwtAuthGuard} from './jwt-auth.guard.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
+  providers: [AuthService, JwtAuthGuard, LoginAttemptsService],
   exports: [JwtAuthGuard, JwtModule],
 })
 export class AuthModule {

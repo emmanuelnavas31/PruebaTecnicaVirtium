@@ -37,6 +37,49 @@ describe('Auth (e2e)', () => {
     expect(wrongPassword.body.code).toBe('INVALID_CREDENTIALS');
   });
 
+  describe('límite de intentos', () => {
+    const attempt = (email: string, password: string) =>
+      request(app.getHttpServer()).post('/auth/login').send({ email, password });
+
+    it('informa los intentos restantes y bloquea al tercer fallo', async () => {
+      expect((await attempt(ANA.email, 'mala').expect(401)).body.details).toEqual({
+        remainingAttempts: 2,
+      });
+      expect((await attempt(ANA.email, 'mala').expect(401)).body.details).toEqual({
+        remainingAttempts: 1,
+      });
+      const locked = await attempt(ANA.email, 'mala').expect(429);
+      expect(locked.body).toMatchObject({
+        code: 'TOO_MANY_LOGIN_ATTEMPTS',
+        details: { retryAfterSeconds: 300 },
+      });
+    });
+
+    it('bloqueado, ni la contraseña correcta permite entrar', async () => {
+      for (let i = 0; i < 2; i++) await attempt(ANA.email, 'mala').expect(401);
+      await attempt(ANA.email, 'mala').expect(429);
+      await attempt(ANA.email, ANA.password).expect(429);
+    });
+
+    it('el bloqueo es por email (sin importar mayúsculas) y no afecta a otros', async () => {
+      for (let i = 0; i < 2; i++) await attempt(ANA.email, 'mala').expect(401);
+      await attempt('ANA@orbita.test', 'mala').expect(429);
+      await attempt('luis@orbita.test', 'Orbita456!').expect(200);
+    });
+
+    it('un login exitoso reinicia el contador', async () => {
+      for (let i = 0; i < 2; i++) await attempt(ANA.email, 'mala').expect(401);
+      await attempt(ANA.email, ANA.password).expect(200);
+      const res = await attempt(ANA.email, 'mala').expect(401);
+      expect(res.body.details).toEqual({ remainingAttempts: 2 });
+    });
+
+    it('aplica igual a emails inexistentes', async () => {
+      for (let i = 0; i < 2; i++) await attempt('nadie@orbita.test', 'x').expect(401);
+      await attempt('nadie@orbita.test', 'x').expect(429);
+    });
+  });
+
   it('login con body inválido responde 400 VALIDATION_ERROR', async () => {
     const res = await request(app.getHttpServer())
       .post('/auth/login')

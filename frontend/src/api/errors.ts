@@ -1,5 +1,6 @@
 const MESSAGES: Record<string, string> = {
   INVALID_CREDENTIALS: 'El email o la contraseña no son correctos.',
+  TOO_MANY_LOGIN_ATTEMPTS: 'Demasiados intentos fallidos. Por seguridad bloqueamos el acceso temporalmente.',
   MISSING_TOKEN: 'Necesitas iniciar sesión para continuar.',
   INVALID_TOKEN: 'Tu sesión no es válida. Inicia sesión de nuevo.',
   TOKEN_EXPIRED: 'Tu sesión expiró. Inicia sesión de nuevo.',

@@ -22,6 +22,21 @@ describe('Login', () => {
     expect(readSession()).toBeNull()
   })
 
+  it('informa los intentos restantes y el bloqueo temporal', async () => {
+    const responses = [
+      { status: 401, body: { statusCode: 401, code: 'INVALID_CREDENTIALS', message: 'x', details: { remainingAttempts: 1 } } },
+      { status: 429, body: { statusCode: 429, code: 'TOO_MANY_LOGIN_ATTEMPTS', message: 'x', details: { retryAfterSeconds: 300 } } },
+    ]
+    mockApi({ 'POST /auth/login': () => responses.shift()! })
+    render(<App />)
+
+    await fillLogin('ana@orbita.test', 'mala')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Te queda 1 intento.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+    expect(await screen.findByText(/Intenta de nuevo en 5 minutos/)).toBeInTheDocument()
+  })
+
   it('valida el email antes de enviar', async () => {
     const fetchSpy = mockApi({})
     render(<App />)
